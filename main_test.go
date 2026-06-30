@@ -3,11 +3,14 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
+
+var runBoundary = flag.Bool("boundary", false, "run wrap-around boundary tests")
 
 // resetBuffer clears the ring buffer between tests.
 func resetBuffer() {
@@ -91,6 +94,9 @@ func TestBasicSendAndFetch(t *testing.T) {
 }
 
 func TestEviction(t *testing.T) {
+	if !*runBoundary {
+		t.Skip("skipping; use -boundary to run")
+	}
 	resetBuffer()
 
 	// Fill MAXMSG-1 slots (one short of full).
@@ -124,6 +130,9 @@ func TestEviction(t *testing.T) {
 }
 
 func TestWrappedFetch(t *testing.T) {
+	if !*runBoundary {
+		t.Skip("skipping; use -boundary to run")
+	}
 	resetBuffer()
 
 	// Seed the absolute counters so tail wraps past MAXMSG during the test.

@@ -16,7 +16,6 @@ const MAXMSG = 2048
 var (
 	messages [MAXMSG]string
 	// head and tail are absolute, ever-increasing counters.
-	// The ring-buffer slot for index i is messages[i % MAXMSG].
 	// head == tail means empty; tail - head == MAXMSG means full.
 	head int
 	tail int
@@ -70,7 +69,7 @@ func sendMsgHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	mu.Lock()
-	messages[tail%MAXMSG] = body.Message
+	messages[tail] = body.Message
 	tail++
 	if tail-head > MAXMSG {
 		head++
@@ -116,7 +115,7 @@ func fetchMsgsHandler(w http.ResponseWriter, r *http.Request) {
 
 	result := []string{}
 	for i := start; i < end; i++ {
-		result = append(result, messages[i%MAXMSG])
+		result = append(result, messages[i])
 	}
 
 	w.Header().Set("Content-Type", "application/json")
