@@ -72,7 +72,7 @@ go test ./...
 
 The test suite covers the empty buffer, basic send/fetch, eviction when full, and wrap-around fetches.
 
-## Packaging for GKE (outline)
+## Packaging for K8s (outline)
 
 1. Write a `Dockerfile` — a two-stage build (Go builder → `gcr.io/distroless/static`) produces a minimal image.
 2. Push to Google Artifact Registry:
@@ -80,7 +80,7 @@ The test suite covers the empty buffer, basic send/fetch, eviction when full, an
    docker build -t REGION-docker.pkg.dev/PROJECT/REPO/smplmsgbrd:TAG .
    docker push REGION-docker.pkg.dev/PROJECT/REPO/smplmsgbrd:TAG
    ```
-3. Deploy to GKE with a `Deployment` + `Service` manifest, setting `containerPort: 8080` and passing `-port 8080` as the container command argument.
+3. Deploy to K8s with a `Deployment` + `Service` manifest, setting `containerPort: 8080` and passing `-port 8080` as the container command argument.
 
 ## License
 
