@@ -1,0 +1,58 @@
+# EXAMPLE / EXERCISE — illustrates how a consumer can pull this manifest
+# directly from GitHub without cloning the repo.
+#
+# Kustomize requires a pinned ref (tag, branch, or commit SHA).
+# There is no "latest tag" support — you must update the ?ref= value manually
+# each time you want to track a new release. Pinning to a tag is preferred
+# over a branch because tags are immutable; a branch ref like ?ref=main will
+# silently pull whatever HEAD points to at apply time.
+#
+# To use:  kubectl apply -k .          (from this directory)
+#       or kubectl apply -k https://github.com/ThorbenJ/smplmsgbrd//k8s?ref=v2026.06.30
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  # The double-slash separates the repository root from the path within it.
+  # ?ref= accepts a tag, branch name, or full commit SHA.
+  - https://github.com/ThorbenJ/smplmsgbrd//k8s/deployment.yaml?ref=v2026.06.30
+
+# Patches modify resources after they are loaded, without editing the source.
+# This example changes the port the app listens on from the default 8080 to
+# 9090. Because the port appears in both the Deployment (container args and
+# containerPort) and the Service (targetPort), both need a matching patch —
+# this is a typical case where kustomize patches keep related resources in sync.
+#
+# The format used here is a strategic merge patch: you supply only the fields
+# you want to change; everything else is inherited from the base resource.
+patches:
+  - target:
+      kind: Deployment
+      name: smplmsgbrd
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: smplmsgbrd
+      spec:
+        template:
+          spec:
+            containers:
+              - name: smplmsgbrd
+                args: ["-port", "9090"]   # passed to the app at startup
+                ports:
+                  - containerPort: 9090   # must match the arg above
+
+  - target:
+      kind: Service
+      name: smplmsgbrd
+    patch: |-
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: smplmsgbrd
+      spec:
+        ports:
+          - name: http
+            targetPort: 9090   # must match the Deployment containerPort above

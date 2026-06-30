@@ -1,0 +1,41 @@
+# EXAMPLE ONLY — not deployable as-is.
+#
+# This file is a reference template. Before applying it you must:
+#   1. Replace every occurrence of board.example.com with your actual hostname.
+#   2. Ensure an Ingress controller is installed in the cluster
+#      (e.g. ingress-nginx: https://kubernetes.github.io/ingress-nginx/).
+#   3. Decide on TLS: either delete the `tls:` block entirely, or provision a
+#      certificate and set secretName to the Kubernetes Secret that holds it.
+#      cert-manager can issue one automatically — see the annotation below.
+#
+# Once customised: kubectl apply -f ingress.yaml
+
+# Ingress — routes external HTTP/S traffic into the cluster and forwards it
+# to the smplmsgbrd Service defined in deployment.yaml.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: smplmsgbrd
+  annotations:
+    # Remove or replace this annotation if you are not using ingress-nginx.
+    kubernetes.io/ingress.class: nginx
+    # Uncomment to have cert-manager issue a Let's Encrypt certificate
+    # automatically (requires cert-manager and a ClusterIssuer named
+    # "letsencrypt-prod" to be present in the cluster):
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+    - hosts:
+        - board.example.com   # CHANGEME
+      secretName: smplmsgbrd-tls
+  rules:
+    - host: board.example.com   # CHANGEME
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: smplmsgbrd
+                port:
+                  name: http

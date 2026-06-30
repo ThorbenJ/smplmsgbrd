@@ -1,0 +1,79 @@
+# Deployment — tells Kubernetes to keep N identical copies of the app running.
+# If a pod crashes or a node goes away, the scheduler replaces it automatically.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: smplmsgbrd
+  labels:
+    app: smplmsgbrd
+spec:
+  # Number of pod replicas to run. Note: smplmsgbrd keeps state in memory,
+  # so multiple replicas will have independent message buffers unless a shared
+  # store is added. Set to 1 unless you've added persistence/clustering.
+  replicas: 1
+  selector:
+    matchLabels:
+      app: smplmsgbrd
+  template:
+    metadata:
+      labels:
+        app: smplmsgbrd
+    spec:
+      # GHCR packages are public by default when the repo is public.
+      # If your repo is private, create an image pull secret:
+      #   kubectl create secret docker-registry ghcr-creds \
+      #     --docker-server=ghcr.io \
+      #     --docker-username=<github-user> \
+      #     --docker-password=<personal-access-token>
+      # Then uncomment the next two lines:
+      # imagePullSecrets:
+      #   - name: ghcr-creds
+      containers:
+        - name: smplmsgbrd
+          image: ghcr.io/thorbenj/smplmsgbrd:latest
+          ports:
+            - containerPort: 8080   # must match the port the app listens on
+          # Declare how much CPU/memory this container needs (request) and
+          # the hard cap it may not exceed (limit).
+          resources:
+            requests:
+              cpu: "50m"        # 50 millicores — 5% of one CPU core
+              memory: "32Mi"
+            limits:
+              cpu: "200m"
+              memory: "64Mi"
+          # Liveness probe: if this fails, Kubernetes restarts the container.
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          # Readiness probe: if this fails, the pod is removed from the
+          # Service endpoints until it recovers (no traffic sent to it).
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 10
+
+---
+
+# Service — gives the Deployment a stable internal DNS name and IP address.
+# Pods come and go; the Service acts as a fixed front door inside the cluster.
+# Type ClusterIP means it is only reachable from within the cluster; the
+# Ingress below is what exposes it to the outside world.
+apiVersion: v1
+kind: Service
+metadata:
+  name: smplmsgbrd
+spec:
+  selector:
+    app: smplmsgbrd   # routes traffic to pods with this label
+  ports:
+    - name: http
+      port: 80          # port clients use to reach the Service
+      targetPort: 8080  # port the container actually listens on
+  type: ClusterIP
+
