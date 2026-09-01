@@ -62,8 +62,7 @@ spec:
 
 # Service — gives the Deployment a stable internal DNS name and IP address.
 # Pods come and go; the Service acts as a fixed front door inside the cluster.
-# Type ClusterIP means it is only reachable from within the cluster; the
-# Ingress below is what exposes it to the outside world.
+# Type ClusterIP means it is only reachable from within the cluster.
 apiVersion: v1
 kind: Service
 metadata:

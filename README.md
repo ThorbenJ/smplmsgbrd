@@ -1,6 +1,8 @@
 # smplmsgbrd
 
-A minimal shared message board written in Go. Intended as a self-contained training artefact for packaging Go applications in a Artifact Registry and deploying them on K8s.
+A minimal shared message board written in Go. Intended as a self-contained training artefact for packaging Go applications in Artifact Registry and deploying them on K8s.
+
+Some branches contain intentional bugs for guided exercises. If you are working through an exercise, check out the relevant branch and read the README there for instructions.
 
 The server holds messages in memory and exposes a small JSON API. The browser page polls for updates without requiring WebSockets or a framework.
 
@@ -72,15 +74,46 @@ go test ./...
 
 The test suite covers the empty buffer, basic send/fetch, eviction when full, and wrap-around fetches.
 
-## Packaging for K8s (outline)
+## Packaging
 
-1. Write a `Dockerfile` — a two-stage build (Go builder → `gcr.io/distroless/static`) produces a minimal image.
-2. Push to Google Artifact Registry:
-   ```sh
-   docker build -t REGION-docker.pkg.dev/PROJECT/REPO/smplmsgbrd:TAG .
-   docker push REGION-docker.pkg.dev/PROJECT/REPO/smplmsgbrd:TAG
-   ```
-3. Deploy to K8s with a `Deployment` + `Service` manifest, setting `containerPort: 8080` and passing `-port 8080` as the container command argument.
+### Pre-built image
+
+A multi-arch image (`linux/amd64`, `linux/arm64`) is published automatically to GitHub Container Registry on every `v*` tag push:
+
+```
+ghcr.io/thorbenj/smplmsgbrd:latest
+ghcr.io/thorbenj/smplmsgbrd:v2026.06.30   # version tag
+ghcr.io/thorbenj/smplmsgbrd:<commit-sha>  # exact commit
+```
+
+See [`.github/workflows/docker.yml`](.github/workflows/docker.yml) for the CI definition.
+
+### Build it yourself
+
+The repo includes a `Dockerfile` (two-stage build: Go builder → `alpine:3.21`):
+
+```sh
+docker build -t smplmsgbrd:local .
+```
+
+### Push to your own registry
+
+To push to Google Artifact Registry (or any other registry), tag and push after building:
+
+```sh
+docker build -t REGION-docker.pkg.dev/PROJECT/REPO/smplmsgbrd:TAG .
+docker push REGION-docker.pkg.dev/PROJECT/REPO/smplmsgbrd:TAG
+```
+
+### Deploy to K8s
+
+Ready-to-use manifests live in [`k8s/`](k8s/):
+
+- `deployment.yaml` — Deployment + ClusterIP Service (port 80 → 8080)
+- `ingress.yaml` — example Ingress (nginx, TLS placeholder; needs customisation before use)
+- `kustomization.yaml` — example Kustomize overlay
+
+Note: the in-memory buffer is per-process; multiple replicas will have independent message histories.
 
 ## License
 
